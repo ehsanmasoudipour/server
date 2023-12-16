@@ -1,0 +1,35 @@
+[tool.poetry]
+name = "v2"
+version = "0.1.0"
+description = ""
+authors = ["ehsanmasoudipour"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+toml = "^0.10.2"
+ipython = "^8.18.1"
+djangorestframework = "^3.14.0"
+python-decouple = "^3.8"
+psycopg2 = "^2.9.9"
+django = "^4.2.1"
+markdown = "^3.5.1"
+django-filter = "^23.5"
+mysql-connector-python = "^8.0.26"
+pymysql = "^1.1.0"
+mysqlclient = "2.0.3"
+tqdm = "4.31.1"
+setuptools = "^58.0"
+pep517 = "^0.13.1"
+paramiko = "^3.3.1"
+redis = "^5.0.1"
+celery = "^5.3.6"
+django-redis = "5.4.0"
+cookbook = "^2.2.25"
+django-celery-beat = "^2.5.0"
+psycopg2-binary = "^2.9.9"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

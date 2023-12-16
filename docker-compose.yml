@@ -1,0 +1,47 @@
+version: '3.8'
+
+services:
+  web:
+    build: ./kernel
+    command: python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./kernel:/usr/src/app
+    ports:
+      - 6379:8000
+    environment:
+      - DEBUG=1
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+      - CELERY_BROKER=redis://redis:6379/0
+      - CELERY_BACKEND=redis://redis:6379/0
+    depends_on:
+      - redis
+
+  celery:
+    build: ./kernel
+    command: celery --app=kernel worker --loglevel=info
+    volumes:
+      - ./kernel:/usr/src/app
+    environment:
+      - DEBUG=1
+      - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1
+      - CELERY_BROKER=redis://redis:6379/0
+      - CELERY_BACKEND=redis://redis:6379/0
+    depends_on:
+      - web
+      - redis
+
+  redis:
+    image: redis:latest
+    command: redis-server --requirepass 
+    ports:
+      - "6379:6379"
+    networks:
+      - my_network
+
+volumes:
+  redis_data:
+
+
+networks:
+  my_network:
+    driver: bridge

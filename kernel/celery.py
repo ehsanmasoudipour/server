@@ -31,5 +31,5 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "kernel.settings")
 app = Celery("kernel")
 
 app.config_from_object("django.conf:settings", namespace="CELERY")
-
+# app.CELERY_TIMEZONE = 'Asia/tehran'
 app.autodiscover_tasks()
