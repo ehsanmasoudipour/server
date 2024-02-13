@@ -16,12 +16,27 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
-from client.api.v1.views.event import EventApiView
-
-
+from client.api.v1.views.event import EventApiView, home
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
+from django.conf import settings
+from django.conf.urls import include
+from client.api.v1.views import event
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('event/', EventApiView.as_view(), name='event_api'),
-    # path('event/api/client/', include('client.api.urls')),
-]
+    path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),
+    path('api/token/refresh/', TokenRefreshView.as_view(), name='token_refresh'),
+    path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
+    path('event/api/client/', include('client.api.urls')),
     
+    
+    
+]
+if settings.DEBUG:
+    import debug_toolbar
+    urlpatterns += [
+        
+        path("client/template/chat/", include("client.api.urls")),
+        path('debug/',  include(debug_toolbar.urls)),
+        # ...
+    ] 

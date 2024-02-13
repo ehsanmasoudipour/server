@@ -1,3 +1,31 @@
+from datetime import timedelta
+def patch_broken_pipe_error():
+    """Monkey Patch BaseServer.handle_error to not write
+    a stacktrace to stderr on broken pipe.
+    http://stackoverflow.com/a/22618740/362702"""
+    import sys
+    from socketserver import BaseServer
+    from wsgiref import handlers
+
+    handle_error = BaseServer.handle_error
+    log_exception = handlers.BaseHandler.log_exception
+
+    def is_broken_pipe_error():
+        type, err, tb = sys.exc_info()
+        return repr(err) == "error(32, 'Broken pipe')"
+
+    def my_handle_error(self, request, client_address):
+        if not is_broken_pipe_error():
+            handle_error(self, request, client_address)
+
+    def my_log_exception(self, exc_info):
+        if not is_broken_pipe_error():
+            log_exception(self, exc_info)
+
+    BaseServer = my_handle_error
+    handlers.BaseHandler.log_exception = my_log_exception
+
+patch_broken_pipe_error()
 """
 Django settings for kernel project.
 
@@ -47,19 +75,57 @@ CELERY_BEAT_SCHEDULER = 'django_celery_beat.schedulers:DatabaseScheduler'
 
 
 INSTALLED_APPS = [
+    'channels',
+    'client',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'client',
+    'debug_toolbar',
     'rest_framework',
+    'user',
     'django_celery_beat',
     'suit',
 ]
 
+INTERNAL_IPS = [
+    # ...
+    '127.0.0.1',
+    # ...
+]
+DEBUG_TOOLBAR_PANELS = [
+    # ...
+
+    'debug_toolbar.panels.versions.VersionsPanel',
+    'debug_toolbar.panels.timer.TimerPanel',
+    'debug_toolbar.panels.settings.SettingsPanel',
+    'debug_toolbar.panels.headers.HeadersPanel',
+    'debug_toolbar.panels.request.RequestPanel',
+    'debug_toolbar.panels.sql.SQLPanel',
+    'debug_toolbar.panels.staticfiles.StaticFilesPanel',
+    'debug_toolbar.panels.templates.TemplatesPanel',
+    'debug_toolbar.panels.cache.CachePanel',
+    'debug_toolbar.panels.signals.SignalsPanel',
+    'debug_toolbar.panels.logging.LoggingPanel',
+    'debug_toolbar.panels.redirects.RedirectsPanel',
+    # ...
+]
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+}
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+}
 MIDDLEWARE = [
+    'debug_toolbar.middleware.DebugToolbarMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -67,8 +133,13 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    
 ]
 
+
+
+proxy_intercept_errors = False
+# PROXY_INTERCEPT_ERRORS = False
 ROOT_URLCONF = 'kernel.urls'
 
 TEMPLATES = [
@@ -86,9 +157,16 @@ TEMPLATES = [
         },
     },
 ]
-
-WSGI_APPLICATION = 'kernel.wsgi.application'
-
+ASGI_APPLICATION = 'kernel.asgi.application'
+# WSGI_APPLICATION = 'kernel.wsgi.application'
+channels_layers = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
@@ -96,7 +174,7 @@ WSGI_APPLICATION = 'kernel.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': BASE_DIR / "db.sqlite3",
     }
 }
 
@@ -141,3 +219,8 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# AUTH_USER_MODEL = 'user.User'
+# settings.py
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'
+# settings.py
+SESSION_COOKIE_AGE = 1209600  # Two weeks, in seconds
